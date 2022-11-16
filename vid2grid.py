@@ -43,11 +43,11 @@ for row in range(rows):
 
     if vidrefs:
         cmd += "".join(vidrefs) 
-        cmd += f" hstack= inputs={len(vidrefs)} [r{row}]; \\\n"
+        cmd += f" hstack=inputs={len(vidrefs)} [r{row}]; \\\n"
         rowrefs.append(f"[r{row}]")
 
 cmd += "".join(rowrefs)
-cmd += f" vstack= inputs={len(rowrefs)} [v]\" \\\n"
+cmd += f" vstack=inputs={len(rowrefs)} [v]\" \\\n"
 cmd += f"-map \"[v]\" -c:v h264_videotoolbox "+outfile
 
 print()

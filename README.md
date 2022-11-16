@@ -25,7 +25,7 @@ optional arguments:
 ### Examples
 ```python vidgrid.py -i "/input/*.avi" -s 0.3 -t``` (Mac)  
 ```python vidgrid.py -m "C:\path\to\mpv" -i "C:\input\*.avi" -s 0.3 -t``` (Windows)  
-If every input filename contains the pattern "\_\<number\>\<letter\>\_" then the videos will be tiled according to your convention (column=number/row=letter), with missing slots blank.  
+If every input filename contains the pattern "\_\<number\>\<letter\>\_" then the videos will be tiled according to the convention (column=number/row=letter), with missing slots blank.  
   
 Otherwise, the videos will be shown in alphabetical order.   
 You can set number of rows and columns by using -r and -c. The output video dimension will be (input_video_width * scale_factor * columns) x (input_video_height * scale_factor * rows)  

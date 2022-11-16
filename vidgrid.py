@@ -7,11 +7,16 @@ import re
 import argparse
 import platform
 
-from subprocess import check_output
+import subprocess
 
 def get_index(str):
     m = re.search(r'(^[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]\.)', str)
     return re.search(r'[0-9]{1,2}', m.group()).group().zfill(2) + re.search(r'[A-Z]', m.group()).group()
+
+def fix_path_for_ffmpeg_win(p):
+    p = p.replace("\\", "\\\\")
+    p = p.replace(":", "\\:")
+    return p
 
 argv = sys.argv
 argv = argv[1:]
@@ -128,7 +133,7 @@ if transpose:
 tile_width = 0
 tile_height = 0
 for f in allfiles:
-    out = check_output([mpv, "--script=getdims.lua", f])
+    out = subprocess.check_output([mpv, "--script=getdims.lua", f])
     for line in out.splitlines():
         print(line)
         if line.startswith(b"[getdims]"):
@@ -212,14 +217,19 @@ else:
         titles.append(os.path.basename(f))
 
 fontpass = os.path.join(os.path.dirname(os.path.realpath(__file__)), "arial.ttf")
+if platform.system() == "Windows":
+    fontpass = fix_path_for_ffmpeg_win(fontpass)
 
 print("tile_width :" + str(tile_width))
 print("tile_height :" + str(tile_height))
 print("max_items :" + str(max_items))
 print("rows: " + str(rows))
 print("cols: " + str(cols))
+commands = []
+commands.append(f"{mpv}")
+commands.append("--keep-open=yes")
 
-command = f"{mpv} --keep-open=yes --lavfi-complex=\""
+command = "--lavfi-complex="
 
 i = 1
 rowrefs = ""
@@ -249,10 +259,17 @@ for row in range(rows):
 
 if rows > 1:
     command += f"{rowrefs} vstack=inputs={rows} [vo]"
+commands.append(command)
 
-command += f"\" {allfiles[0]}  "
 if max_items > 1:
-    command += f"--external-files=\"{filelist}\""
+    for f in allfiles[1:max_items]:
+        commands.append(f"--external-file={f}")
 
-print(command)
-os.system(command)
+commands.append(allfiles[0])
+
+print(commands)
+cp = subprocess.run(commands, capture_output=True)
+print(cp.stdout)
+print(cp.stderr)
+
+print("done")

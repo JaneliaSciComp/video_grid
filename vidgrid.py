@@ -9,6 +9,8 @@ import platform
 
 import subprocess
 
+import logging
+
 def get_index(str):
     m = re.search(r'(^[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]\.)', str)
     return re.search(r'[0-9]{1,2}', m.group()).group().zfill(2) + re.search(r'[A-Z]', m.group()).group()
@@ -31,12 +33,16 @@ parser.add_argument("-s", "--scale", dest="scale", type=float, default=1.0, help
 parser.add_argument("--width", dest="width", type=int, default=0, help="max width")
 parser.add_argument("--height", dest="height", type=int, default=0, help="max height")
 parser.add_argument("-t", "--transpose", dest="transpose", default=False, action="store_true", help="transpose a grid")
+parser.add_argument("--verbose", dest="verbose", default=False, action="store_true", help="enable verbose logging")
 
 if not argv:
     parser.print_help()
     exit()
 
 args = parser.parse_args(argv)
+
+if args.verbose:
+    logging.basicConfig(level=logging.INFO)
 
 input = args.input.split(",")
 rows = args.row
@@ -81,7 +87,7 @@ min_id_letter = ord('Z')
 for f in allfiles:
     m = re.search(r'(^[0-9]{,2}[A-Z]_|_[0-9]{,2}[A-Z]_|_[0-9]{,2}[A-Z]\.)', f)
     if not m:
-        print(f)
+        logging.info("Files are not indexed. They will be sorted in alphabetical order")
         indexed = False
         break
     else:
@@ -96,8 +102,9 @@ for f in allfiles:
         if c > max_id_letter:
             max_id_letter = c
 
-print("id: " + str(max_id_num) + " " + str(min_id_num))
-print("ch: " + chr(max_id_letter) + " " + chr(min_id_letter))
+if indexed:
+    print("id: " + str(min_id_num) + " -> " + str(max_id_num))
+    print("ch: " + chr(min_id_letter) + " -> " + chr(max_id_letter))
 
 id_titles = []
 blankfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "blank.avi")
@@ -135,7 +142,7 @@ tile_height = 0
 for f in allfiles:
     out = subprocess.check_output([mpv, "--script=getdims.lua", f])
     for line in out.splitlines():
-        print(line)
+        logging.info(line)
         if line.startswith(b"[getdims]"):
             strs = line.split()
             tile_width = int(strs[1])
@@ -222,44 +229,44 @@ if platform.system() == "Windows":
 
 print("tile_width :" + str(tile_width))
 print("tile_height :" + str(tile_height))
-print("max_items :" + str(max_items))
+print("items :" + str(max_items))
 print("rows: " + str(rows))
 print("cols: " + str(cols))
+
 commands = []
 commands.append(f"{mpv}")
 commands.append("--keep-open=yes")
 
-command = "--lavfi-complex="
-
+vf = "--lavfi-complex="
 i = 1
 rowrefs = ""
 for row in range(rows):
     vidrefs = ""
     for col in range(cols):
-        command += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpass}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+        vf += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpass}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
         if max_items > 1:
-            command += f"[s{i}]; "
+            vf += f"[s{i}]; "
         else:
-            command += "[vo]"
+            vf += "[vo]"
         vidrefs += f"[s{i}]"
         i += 1
         if i-1 > max_items:
             break
     if cols > 1:
-        command += f"{vidrefs} hstack=inputs={cols} "
+        vf += f"{vidrefs} hstack=inputs={cols} "
         if rows > 1:
-            command += f"[r{row}]; "
+            vf += f"[r{row}]; "
             rowrefs += f"[r{row}]"
         else:
-            command += " [vo]"
+            vf += " [vo]"
     else:
         rowrefs += vidrefs
     if i-1 > max_items:
         break
 
 if rows > 1:
-    command += f"{rowrefs} vstack=inputs={rows} [vo]"
-commands.append(command)
+    vf += f"{rowrefs} vstack=inputs={rows} [vo]"
+commands.append(vf)
 
 if max_items > 1:
     for f in allfiles[1:max_items]:
@@ -267,9 +274,8 @@ if max_items > 1:
 
 commands.append(allfiles[0])
 
-print(commands)
+logging.info(commands)
+print("running mpv player...")
 cp = subprocess.run(commands, capture_output=True)
-print(cp.stdout)
-print(cp.stderr)
-
-print("done")
+logging.info(cp.stdout)
+logging.info(cp.stderr)

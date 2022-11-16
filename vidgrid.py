@@ -13,10 +13,6 @@ def get_index(str):
     m = re.search(r'(^[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]\.)', str)
     return re.search(r'[0-9]{1,2}', m.group()).group().zfill(2) + re.search(r'[A-Z]', m.group()).group()
 
-def get_index_tr(str):
-    m = re.search(r'(^[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]_|_[0-9]{1,2}[A-Z]\.)', str)
-    return re.search(r'[A-Z]', m.group()).group() + re.search(r'[0-9]{1,2}', m.group()).group().zfill(2)
-
 argv = sys.argv
 argv = argv[1:]
 

@@ -23,7 +23,7 @@ def fix_path_for_ffmpeg_win(p):
 argv = sys.argv
 argv = argv[1:]
 
-usage_text = ("Usage:" + "  slice2octree.py" + " [options]")
+usage_text = ("Usage:" + "  vidgrid.py" + " [options]")
 parser = argparse.ArgumentParser(description=usage_text)
 parser.add_argument("-m", "--mpv", dest="mpv", type=str, default=None, help="path to mpv")
 parser.add_argument("-i", "--input", dest="input", type=str, default=None, help="input files or directory")

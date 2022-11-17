@@ -137,10 +137,11 @@ if indexed:
 if transpose:
     rows, cols = cols, rows
 
+script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "getdims.lua")
 tile_width = 0
 tile_height = 0
 for f in allfiles:
-    out = subprocess.check_output([mpv, "--script=getdims.lua", f])
+    out = subprocess.check_output([mpv, f"--script={script_path}", f])
     for line in out.splitlines():
         logging.info(line)
         if line.startswith(b"[getdims]"):
@@ -223,9 +224,9 @@ else:
     for f in allfiles[:max_items]:
         titles.append(os.path.basename(f))
 
-fontpass = os.path.join(os.path.dirname(os.path.realpath(__file__)), "arial.ttf")
+fontpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "arial.ttf")
 if platform.system() == "Windows":
-    fontpass = fix_path_for_ffmpeg_win(fontpass)
+    fontpath = fix_path_for_ffmpeg_win(fontpath)
 
 print("tile_width :" + str(tile_width))
 print("tile_height :" + str(tile_height))
@@ -243,7 +244,7 @@ rowrefs = ""
 for row in range(rows):
     vidrefs = ""
     for col in range(cols):
-        vf += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpass}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+        vf += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
         if max_items > 1:
             vf += f"[s{i}]; "
         else:

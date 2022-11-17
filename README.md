@@ -12,7 +12,7 @@ usage: vidgrid.py [-h] [-m MPV] [-i INPUT] [-r ROW] [-c COL] [-s SCALE] [--width
 
 optional arguments:
   -h, --help                show this help message and exit
-  -m MPV, --mpv MPV         path to mpv (you do not need this option on Mac if you installed mpv to the Applications directory)
+  -m MPV, --mpv MPV         path to mpv (you do not need this option on Mac if you install mpv to the Applications directory)
   -i INPUT, --input INPUT   input files or directory
   -r ROW, --row ROW         number of rows
   -c COL, --col COL         number of colmuns

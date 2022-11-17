@@ -29,7 +29,7 @@ optional arguments:
 If every input filename contains the pattern "\_\<number\>\<letter\>\_" then the videos will be tiled according to the convention (column=number/row=letter), with missing slots blank.  
   
 Otherwise, the videos will be shown in alphabetical order.   
-You can set number of rows and columns by using -r and -c. The output video dimension will be (input_video_width * scale_factor * columns) x (input_video_height * scale_factor * rows)  
+You can set number of rows and columns by using -r and -c. The output video dimensions will be (input_video_width * scale_factor * columns) x (input_video_height * scale_factor * rows)  
 ```python vidgrid.py -i "/input/*.mp4" -r 12 -c 7 -s 0.3```  
 
 If you do not set number of rows and columns, they are calculated from the max width and height.  

@@ -2,9 +2,10 @@
 Display many small videos in a grid
 
 ## Initial Setup  
-1. Install python3 (https://www.python.org/downloads/).
+1. Install Anaconda (https://www.anaconda.com/).
 2. Install mpv (https://mpv.io/) to the Applications directory.
 3. Download this script (git clone or https://github.com/JaneliaSciComp/video_grid/releases).
+4. Run ```conda update conda```
 
 ## Usage  
 ```

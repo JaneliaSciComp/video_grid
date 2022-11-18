@@ -302,14 +302,14 @@ if output:
     for row in range(rows):
         vidrefs = ""
         for col in range(cols):
-            vf += f"[{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+            vf += f"[{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
             if max_items > 1:
                 vf += f"[s{i}]; "
             else:
                 vf += "[v]"
             vidrefs += f"[s{i}]"
             i += 1
-            if i-1 > max_items:
+            if i > max_items:
                 break
         if cols > 1:
             vf += f"{vidrefs} hstack=inputs={cols} "
@@ -320,7 +320,7 @@ if output:
                 vf += " [v]"
         else:
             rowrefs += vidrefs
-        if i-1 > max_items:
+        if i > max_items:
             break
 
     if rows > 1:

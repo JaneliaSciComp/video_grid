@@ -31,13 +31,13 @@ optional arguments:
 ```python vidgrid.py -i "/input/*.avi" -s 0.3 -t``` (Mac)  
 ```python vidgrid.py -m "C:\path\to\mpv" -i "C:\input\*.avi" -s 0.3 -t``` (Windows)  
 If every input filename contains the pattern "\_\<number\>\<letter\>\_" then the videos will be tiled according to the convention (column=number/row=letter), with missing slots blank.  
+Otherwise, the videos will be shown in alphabetical order.   
 
 You can output a grid video by using -o option.  
 ```python vidgrid.py -i "/input/*.avi" -o "/output/grid.avi" -s 0.3 -t```  
 On Windows, it might be better to use h264_nvenc (for nvidia cards) or h264_amf (for amd cards) for encoding.  
 ```python vidgrid.py -m "C:\path\to\mpv" -i "C:\input\*.avi" -f C:\path\to\ffmpeg --encoder h264_nvenc -s 0.3 -t``` (Windows)  
   
-Otherwise, the videos will be shown in alphabetical order.   
 You can set number of rows and columns by using -r and -c. The output video dimensions will be (input_video_width * scale_factor * columns) x (input_video_height * scale_factor * rows)  
 ```python vidgrid.py -i "/input/*.mp4" -r 12 -c 7 -s 0.3```  
 

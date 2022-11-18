@@ -20,13 +20,48 @@ def fix_path_for_ffmpeg_win(p):
     p = p.replace(":", "\\:")
     return p
 
+import asyncio
+
+#https://kevinmccarthy.org/2016/07/25/streaming-subprocess-stdin-and-stdout-with-asyncio-in-python/
+async def _read_stream(stream, cb):  
+    while True:
+        ch = await stream.read(1)
+        if ch:
+            cb(ch.decode("utf-8"))
+        else:
+            break
+
+async def _stream_subprocess(cmd, stdout_cb, stderr_cb):  
+    process = await asyncio.create_subprocess_exec(*cmd,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+
+    await asyncio.wait([
+        asyncio.create_task(_read_stream(process.stdout, stdout_cb)),
+        asyncio.create_task(_read_stream(process.stderr, stderr_cb))
+    ])
+    return await process.wait()
+
+def execute(cmd, stdout_cb, stderr_cb):  
+    loop = asyncio.get_event_loop()
+    rc = loop.run_until_complete(
+        _stream_subprocess(
+            cmd,
+            stdout_cb,
+            stderr_cb,
+    ))
+    loop.close()
+    return rc
+
 argv = sys.argv
 argv = argv[1:]
 
 usage_text = ("Usage:" + "  vidgrid.py" + " [options]")
 parser = argparse.ArgumentParser(description=usage_text)
 parser.add_argument("-m", "--mpv", dest="mpv", type=str, default=None, help="path to mpv")
+parser.add_argument("-f", "--ffmpeg", dest="ffmpeg", type=str, default=None, help="path to ffmpeg")
+parser.add_argument("--encoder", dest="encoder", type=str, default=None, help="encoder for ffmpeg")
 parser.add_argument("-i", "--input", dest="input", type=str, default=None, help="input files or directory")
+parser.add_argument("-o", "--output", dest="output", type=str, default=None, help="output file path")
 parser.add_argument("-r", "--row", dest="row", type=int, default=0, help="number of rows")
 parser.add_argument("-c", "--col", dest="col", type=int, default=0, help="number of colmuns")
 parser.add_argument("-s", "--scale", dest="scale", type=float, default=1.0, help="scale factor")
@@ -45,10 +80,13 @@ if args.verbose:
     logging.basicConfig(level=logging.INFO)
 
 input = args.input.split(",")
+output = args.output
 rows = args.row
 cols = args.col
 scale = args.scale
 mpv = args.mpv
+ffmpeg = args.ffmpeg
+encoder = args.encoder
 transpose = args.transpose
 
 if not mpv:
@@ -58,6 +96,20 @@ if not mpv:
         mpv = "mpv.exe"
     else:
         mpv = "mpv"
+
+if not ffmpeg:
+    if platform.system() == "Darwin":
+        ffmpeg = "/Applications/ffmpeg"
+    elif platform.system() == "Windows":
+        ffmpeg = "ffmpeg.exe"
+    else:
+        ffmpeg = "ffmpeg"
+
+if not encoder:
+    if platform.system() == "Darwin":
+        encoder = "h264_videotoolbox"
+    else:
+        encoder = "libx264"
 
 allfiles = []
 if input:
@@ -235,48 +287,104 @@ print("rows: " + str(rows))
 print("cols: " + str(cols))
 
 commands = []
-commands.append(f"{mpv}")
-commands.append("--keep-open=yes")
 
-vf = "--lavfi-complex="
-i = 1
-rowrefs = ""
-for row in range(rows):
-    vidrefs = ""
-    for col in range(cols):
-        vf += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
-        if max_items > 1:
-            vf += f"[s{i}]; "
+if output:
+    commands.append(f"{ffmpeg}")
+
+    for f in allfiles:
+        commands.append("-i")
+        commands.append(f)
+
+    commands.append("-filter_complex")
+    vf = ""
+    i = 0
+    rowrefs = ""
+    for row in range(rows):
+        vidrefs = ""
+        for col in range(cols):
+            vf += f"[{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+            if max_items > 1:
+                vf += f"[s{i}]; "
+            else:
+                vf += "[v]"
+            vidrefs += f"[s{i}]"
+            i += 1
+            if i-1 > max_items:
+                break
+        if cols > 1:
+            vf += f"{vidrefs} hstack=inputs={cols} "
+            if rows > 1:
+                vf += f"[r{row}]; "
+                rowrefs += f"[r{row}]"
+            else:
+                vf += " [v]"
         else:
-            vf += "[vo]"
-        vidrefs += f"[s{i}]"
-        i += 1
+            rowrefs += vidrefs
         if i-1 > max_items:
             break
-    if cols > 1:
-        vf += f"{vidrefs} hstack=inputs={cols} "
-        if rows > 1:
-            vf += f"[r{row}]; "
-            rowrefs += f"[r{row}]"
+
+    if rows > 1:
+        vf += f"{rowrefs} vstack=inputs={rows} [v]"
+    commands.append(vf)
+
+    commands.append("-map")
+    commands.append("[v]")
+    commands.append("-c:v")
+    commands.append(encoder)
+    commands.append(output)
+
+    if os.path.isfile(output):
+        os.remove(output)
+
+    print("running ffmpeg...")
+    logging.info(commands)
+    print(execute(
+        commands,
+        lambda x: print("%s" % x, end=''),
+        lambda x: print("%s" % x, end=''),
+    ))
+else:
+    commands.append(f"{mpv}")
+    commands.append("--keep-open=yes")
+
+    vf = "--lavfi-complex="
+    i = 1
+    rowrefs = ""
+    for row in range(rows):
+        vidrefs = ""
+        for col in range(cols):
+            vf += f"[vid{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i-1]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+            if max_items > 1:
+                vf += f"[s{i}]; "
+            else:
+                vf += "[vo]"
+            vidrefs += f"[s{i}]"
+            i += 1
+            if i-1 > max_items:
+                break
+        if cols > 1:
+            vf += f"{vidrefs} hstack=inputs={cols} "
+            if rows > 1:
+                vf += f"[r{row}]; "
+                rowrefs += f"[r{row}]"
+            else:
+                vf += " [vo]"
         else:
-            vf += " [vo]"
-    else:
-        rowrefs += vidrefs
-    if i-1 > max_items:
-        break
+            rowrefs += vidrefs
+        if i-1 > max_items:
+            break
 
-if rows > 1:
-    vf += f"{rowrefs} vstack=inputs={rows} [vo]"
-commands.append(vf)
+    if rows > 1:
+        vf += f"{rowrefs} vstack=inputs={rows} [vo]"
+    commands.append(vf)
 
-if max_items > 1:
-    for f in allfiles[1:max_items]:
-        commands.append(f"--external-file={f}")
+    if max_items > 1:
+        for f in allfiles[1:max_items]:
+            commands.append(f"--external-file={f}")
 
-commands.append(allfiles[0])
-
-logging.info(commands)
-print("running mpv player...")
-cp = subprocess.run(commands, capture_output=True)
-logging.info(cp.stdout)
-logging.info(cp.stderr)
+    commands.append(allfiles[0])
+    print("running mpv player...")
+    logging.info(commands)
+    cp = subprocess.run(commands, capture_output=True)
+    logging.info(cp.stdout.decode("utf-8") )
+    logging.info(cp.stderr.decode("utf-8") )

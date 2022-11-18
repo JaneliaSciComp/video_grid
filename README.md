@@ -9,25 +9,32 @@ Display many small videos in a grid
 
 ## Usage  
 ```
-usage: vidgrid.py [-h] [-m MPV] [-i INPUT] [-r ROW] [-c COL] [-s SCALE] [--width WIDTH] [--height HEIGHT] [-t]
+usage: vidgrid.py [-h] [-m MPV] [-f FFMPEG] [--encoder ENCODER] [-i INPUT] [-r ROW] [-c COL] [-s SCALE] [--width WIDTH] [--height HEIGHT] [-t] [--verbose]
 
 optional arguments:
-  -h, --help                show this help message and exit
-  -m MPV, --mpv MPV         path to mpv (you do not need this option on Mac if you install mpv to the Applications directory)
-  -i INPUT, --input INPUT   input files or directory
-  -r ROW, --row ROW         number of rows
-  -c COL, --col COL         number of colmuns
-  -s SCALE, --scale SCALE   scale factor
-  --width WIDTH             max width
-  --height HEIGHT           max height
-  -t, --transpose           transpose a grid
-  --verbose                 enable verbose logging
+  -h, --help                  show this help message and exit
+  -m MPV, --mpv MPV           path to mpv (you do not need this option on Mac if you install mpv to the Applications directory)
+  -f FFMPEG, --ffmpeg FFMPEG  path to ffmpeg (you do not need this option on Mac if you install ffmpeg to the Applications directory)
+  --encoder ENCODER           encoder for video output (default libx264 (Win), h264_videotoolbox (Mac))
+  -i INPUT, --input INPUT     input files or directory
+  -r ROW, --row ROW           number of rows
+  -c COL, --col COL           number of colmuns
+  -s SCALE, --scale SCALE     scale factor
+  --width WIDTH               max width
+  --height HEIGHT             max height
+  -t, --transpose             transpose a grid
+  --verbose                   enable verbose logging
 ```
 
 ### Examples
 ```python vidgrid.py -i "/input/*.avi" -s 0.3 -t``` (Mac)  
 ```python vidgrid.py -m "C:\path\to\mpv" -i "C:\input\*.avi" -s 0.3 -t``` (Windows)  
 If every input filename contains the pattern "\_\<number\>\<letter\>\_" then the videos will be tiled according to the convention (column=number/row=letter), with missing slots blank.  
+
+You can output a grid video by using -o option.  
+```python vidgrid.py -i "/input/*.avi" -o "/output/grid.avi" -s 0.3 -t```  
+On Windows, it might be better to use h264_nvenc (for nvidia cards) or h264_amf (for amd cards) for encoding.  
+```python vidgrid.py -m "C:\path\to\mpv" -i "C:\input\*.avi" -f C:\path\to\ffmpeg --encoder h264_nvenc -s 0.3 -t``` (Windows)  
   
 Otherwise, the videos will be shown in alphabetical order.   
 You can set number of rows and columns by using -r and -c. The output video dimensions will be (input_video_width * scale_factor * columns) x (input_video_height * scale_factor * rows)  

@@ -341,6 +341,11 @@ if output:
     commands.append("[v]")
     commands.append("-c:v")
     commands.append(encoder)
+    if encoder == "h264_nvenc":
+        commands.append("-hwaccel")
+        commands.append("cuda")
+        commands.append("-hwaccel_output_format")
+        commands.append("cuda")
     commands.append(output)
 
     if os.path.isfile(output):

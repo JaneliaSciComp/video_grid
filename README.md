@@ -47,3 +47,6 @@ If you do not set number of rows and columns, they are calculated from the max w
   
 Multiple files can be set as input.  
 ```python vidgrid.py -i "video1.avi,video2.avi,video3.avi,video4.avi" -r 2 -c 2 -s 0.3```  
+
+This script can be run on the Janelia LSF cluser.  
+```bsub -J "vgrid_gpu" -P scicompsoft -n 4 -gpu "num=1" -q gpu_rtx -o output2.log 'python3 vidgrid.py -i "/input/*.avi" -f bin/ffmpeg -s 0.3 -t -o grid.avi --encoder h264_nvenc'```

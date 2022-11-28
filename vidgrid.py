@@ -300,6 +300,14 @@ commands = []
 
 if output:
     commands.append(f"{ffmpeg}")
+    commands.append("-y")
+    if encoder == "h264_nvenc":
+        commands.append("-vsync")
+        commands.append("0")
+        commands.append("-init_hw_device")
+        commands.append("cuda=cuda:0")
+        commands.append("-filter_hw_device")
+        commands.append("cuda")
 
     for f in allfiles:
         commands.append("-i")
@@ -312,7 +320,10 @@ if output:
     for row in range(rows):
         vidrefs = ""
         for col in range(cols):
-            vf += f"[{i}] scale={tile_width}x{tile_height} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
+            scaling = f"scale={tile_width}x{tile_height}"
+            #if encoder == "h264_nvenc":
+            #    scaling = f"format=nv12,hwupload,scale_cuda={tile_width}:{tile_height},hwdownload,format=nv12"
+            vf += f"[{i}] {scaling} [t{i}]; [t{i}] drawtext=fontfile=\'{fontpath}\':text=\'{titles[i]}\':x=2:y=2:fontsize=10:fontcolor=black:box=1:boxcolor=white@0.5:boxborderw=5 "
             if max_items > 1:
                 vf += f"[s{i}]; "
             else:
@@ -341,11 +352,6 @@ if output:
     commands.append("[v]")
     commands.append("-c:v")
     commands.append(encoder)
-    if encoder == "h264_nvenc":
-        commands.append("-hwaccel")
-        commands.append("cuda")
-        commands.append("-hwaccel_output_format")
-        commands.append("cuda")
     commands.append(output)
 
     if os.path.isfile(output):

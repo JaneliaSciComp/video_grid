@@ -105,6 +105,8 @@ if not ffmpeg:
     else:
         ffmpeg = "ffmpeg"
 
+ffprobe = os.path.join(os.path.dirname(ffmpeg), "ffprobe")
+
 if not encoder:
     if platform.system() == "Darwin":
         encoder = "h264_videotoolbox"
@@ -193,15 +195,23 @@ script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "getdims
 tile_width = 0
 tile_height = 0
 for f in allfiles:
-    out = subprocess.check_output([mpv, f"--script={script_path}", f])
-    for line in out.splitlines():
-        logging.info(line)
-        if line.startswith(b"[getdims]"):
-            strs = line.split()
-            tile_width = int(strs[1])
-            tile_height = int(strs[2])
-        if tile_width > 0 and tile_height > 0:
-            break
+    out = ""
+    if os.path.exists(mpv):
+        out = subprocess.check_output([mpv, f"--script={script_path}", f])
+        for line in out.splitlines():
+            logging.info(line)
+            if line.startswith(b"[getdims]"):
+                strs = line.split()
+                tile_width = int(strs[1])
+                tile_height = int(strs[2])
+            if tile_width > 0 and tile_height > 0:
+                break
+    else:
+        out = subprocess.check_output([ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", f])
+        logging.info(out)
+        strs = out.split(b'x')
+        tile_width = int(strs[0])
+        tile_height = int(strs[1])
     if tile_width > 0 and tile_height > 0:
         break
 
